@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local configuration file with paths (DO NOT COMMIT)
+config.py
+
+# Data, derivatives, and results (should be outside this repo anyway)
+*.fif
+*.nii.gz
+*.stc
+*.fwd
+*.inv
+results/
+figures/
+
