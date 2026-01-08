@@ -4,4 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "autoreject>=0.4.3",
+    "mne>=1.10.2",
+    "mne-bids>=0.17.0",
+    "pandas>=2.3.3",
+    "requests>=2.32.5",
+    "scikit-learn>=1.7.2",
+    "seaborn>=0.13.2",
+]

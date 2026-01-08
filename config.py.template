@@ -1,0 +1,22 @@
+"""
+Configuration file TEMPLATE for the DFGT MEG analysis.
+INSTRUCTIONS:
+1. Copy this file to 'config.py'
+2. Update the PATHS section to match your local data location.
+"""
+
+import os
+from pathlib import Path
+
+# =============================================================================
+# 1. PATHS - UPDATE THESE FOR YOUR LOCAL MACHINE
+# =============================================================================
+
+# Path to the BIDS root directory
+BIDS_ROOT = Path("/path/to/your/data/DFGT_BIDS")
+
+# Path to derivatives (usually inside BIDS root)
+DERIVATIVES_ROOT = BIDS_ROOT / "derivatives"
+
+# Where to save figures
+FIGURES_DIR = Path("./figures").resolve()
