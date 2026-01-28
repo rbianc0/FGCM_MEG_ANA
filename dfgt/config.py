@@ -40,11 +40,15 @@ SUBJECT_LIST_CSV = PROJECT_ROOT / "FGCM_Demographics.csv"
 
 FGCM_CHANNEL_MAP = {
     "ECG": "ecg",
-    "UADC005": "eyetrack",  # x position
-    "UADC006": "eyetrack",  # y position
-    "UADC007": "eyetrack",  # pupil
-    "UPPT01": "stim",
+    "UPPT001": "stim",
+    "UPPT002": "stim",
     # Note: EOGvert, EOGhor, UADC001 (Respiration) NOT present in FGCM
+}
+
+FGCM_CHANNEL_PREFIX_MAP = {
+    "UADC005": "eyegaze",  # x position
+    "UADC006": "eyegaze",  # y position
+    "UADC007": "pupil",  # pupil
 }
 
 # =============================================================================
@@ -87,11 +91,30 @@ FGCM_TASK_MAPPING_B = {
 # Subjects requiring trigger inversion during conversion
 FGCM_INVERTED_TRIGGER_SUBJECTS = ["C03", "C04"]
 
+# Expected marker labels in CTF datasets (used for consistency checks)
+FGCM_TRIGGER_LABELS = [
+    "startACQ",
+    "CSminus",
+    "CSplusUnpaired",
+    "Gen1",
+    "Gen2",
+    "Gen3",
+    "Gen4",
+    "Gen5",
+    "Gen6",
+    "Gen7",
+    "USface",
+    "WarningTrial",
+    "acTrgBeep",
+    "acTrgScream",
+]
+
 # =============================================================================
 # Backward Compatibility Aliases
 # =============================================================================
 
 FGT_CHANNEL_MAP = FGCM_CHANNEL_MAP
+FGT_CHANNEL_PREFIX_MAP = FGCM_CHANNEL_PREFIX_MAP
 FGT_TASKS = FGCM_TASKS
 FGT_TASK_MAPPING_A = FGCM_TASK_MAPPING_A
 FGT_TASK_MAPPING_B = FGCM_TASK_MAPPING_B

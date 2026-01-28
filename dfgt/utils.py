@@ -114,11 +114,17 @@ def get_subject_group(
     """
     df = load_subject_list(subject_list_csv)
 
-    # Find subject row
-    row = df[df["subid"] == subject_id]
+    source_id = subject_id.strip()
+    if source_id.startswith("sub-"):
+        source_id = source_id.replace("sub-", "", 1)
+    if source_id.isdigit():
+        source_id = bids_id_to_source_id(source_id)
+
+    # Find subject row by MEG ID
+    row = df[df["megid"] == source_id]
 
     if row.empty:
-        raise ValueError(f"Subject {subject_id} not found in subject list")
+        raise ValueError(f"Subject {source_id} not found in subject list")
 
     row_values = row.iloc[0]
 
@@ -150,6 +156,8 @@ def load_subject_list(
     df = _read_subject_list(subject_list_csv)
     if "subid" in df.columns:
         df["subid"] = df["subid"].astype(str).str.strip()
+    if "megid" in df.columns:
+        df["megid"] = df["megid"].astype(str).str.strip()
     return df
 
 
@@ -170,9 +178,9 @@ def get_valid_subjects(
         List of subject IDs (e.g., ["C01", "C02", ...])
     """
     df = load_subject_list(subject_list_csv)
-    if "subid" not in df.columns:
-        raise ValueError("Subject list is missing required column 'subid'")
-    return df["subid"].tolist()
+    if "megid" not in df.columns:
+        raise ValueError("Subject list is missing required column 'megid'")
+    return df["megid"].tolist()
 
 
 def fix_inverted_triggers(
@@ -197,33 +205,45 @@ def fix_inverted_triggers(
     mne.io.Raw
         Raw data with corrected triggers
     """
-    if subject_id not in FGCM_INVERTED_TRIGGER_SUBJECTS:
+    source_id = subject_id.strip()
+    if source_id.startswith("sub-"):
+        source_id = source_id.replace("sub-", "", 1)
+    if source_id.isdigit():
+        source_id = bids_id_to_source_id(source_id)
+
+    if source_id not in FGCM_INVERTED_TRIGGER_SUBJECTS:
         return raw
 
-    # Get trigger channel
-    stim_channel = "UPPT01"
-    if stim_channel not in raw.ch_names:
-        print(f"Warning: {stim_channel} not found, skipping trigger fix")
+    if raw.annotations is None or len(raw.annotations) == 0:
+        print(f"Warning: no annotations found for {source_id}, skipping trigger fix")
         return raw
 
-    # Find events
-    events = mne.find_events(raw, stim_channel=stim_channel)
+    swap_map = {
+        "Gen1": "Gen7",
+        "Gen7": "Gen1",
+        "Gen2": "Gen6",
+        "Gen6": "Gen2",
+        "Gen3": "Gen5",
+        "Gen5": "Gen3",
+    }
 
-    if len(events) == 0:
+    descriptions = list(raw.annotations.description)
+    updated = [swap_map.get(desc, desc) for desc in descriptions]
+    n_changed = sum(1 for old, new in zip(descriptions, updated) if old != new)
+
+    if n_changed == 0:
         return raw
 
-    # Invert trigger codes
-    # Study-specific logic: typically bitwise inversion or specific value swaps
-    # Implement based on actual trigger scheme
-    # Example: invert specific bits
-    # events[:, 2] = np.bitwise_xor(events[:, 2], 0xFF)
+    raw.set_annotations(
+        mne.Annotations(
+            onset=raw.annotations.onset,
+            duration=raw.annotations.duration,
+            description=updated,
+            orig_time=raw.annotations.orig_time,
+        )
+    )
 
-    # For now, log that fix was applied
-    print(f"Applied trigger inversion for {subject_id}")
-
-    # Create annotations from fixed events if needed
-    # ... implementation based on study requirements
-
+    print(f"Relabeled Gen triggers for {source_id}: {n_changed} events updated")
     return raw
 
 

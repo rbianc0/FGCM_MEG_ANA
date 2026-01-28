@@ -5,7 +5,6 @@
 ```
 FGCM_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines (this file)
-├── PLAN.md                   # Conversion pipeline plan and checklist
 ├── pyproject.toml            # Python project configuration
 ├── FGCM_Demographics.csv     # Subject list (local-only, git-ignored)
 │
@@ -31,7 +30,7 @@ FGCM_MEG_ANA_PY/
 ### dfgt/config.py
 Central configuration file containing:
 - **Data paths**: MEG_RAW_ROOT, BIDS_ROOT, DERIVATIVES_ROOT, BEH_ROOT
-- **FGCM channel map**: ECG, UADC005-007 (eyetrack), UPPT01 (stim)
+- **FGCM channel map**: ECG, UPPT001/UPPT002 (stim), UADC005-007 (eyegaze/pupil via prefix match)
 - **Task mapping**: A/B group randomization (runs 01-06)
 - **Processing parameters**: ICA settings, power line frequency, anonymization
 
@@ -48,6 +47,7 @@ BIDS conversion functions:
 - `convert_to_bids()`: Single subject/task conversion
 - `batch_convert()`: Batch conversion with progress tracking
 - `update_channel_types()`: Apply channel type mappings
+- `check_trigger_consistency()`: Report trigger label counts per run
 - `create_dataset_description()`: Generate dataset_description.json
 - `create_participants_tsv()`: Generate participants.tsv
 
@@ -65,7 +65,7 @@ Shared utilities:
 - `source_id_to_bids_id()`: Convert C01 → 001
 - `bids_id_to_source_id()`: Convert 001 → C01
 - `get_subject_group()`: Determine A/B group
-- `fix_inverted_triggers()`: Fix triggers for C03/C04
+- `fix_inverted_triggers()`: Relabel Gen triggers for C03/C04 (Gen1↔Gen7, Gen2↔Gen6, Gen3↔Gen5)
 - `load_subject_list()`: Load subject list file
 
 ### scripts/convert_to_bids.py
@@ -125,22 +125,24 @@ Raw .ds filenames may still include FearGenTinn; keep those as-is.
 | Channel | BIDS Type | Status |
 |---------|-----------|--------|
 | ECG | ecg | Available |
-| UADC005/006/007 | eyetrack | Available |
-| UPPT01 | stim | Available |
+| UADC005/006 | eyegaze | Available |
+| UADC007 | pupil | Available |
+| UPPT001/UPPT002 | stim | Available |
 | EOGvert/EOGhor | - | NOT PRESENT |
 | UADC001 (Respiration) | - | NOT PRESENT |
 
 ## Critical Requirements
 
-1. **MEGGRADAXIAL Patch**: Add `mag="MEGGRADAXIAL"` at line 82 of `mne_bids/utils.py`
+1. **MEGGRADAXIAL Support**: Use mne-bids >=0.17.0 (includes MEGGRADAXIAL mapping)
 2. **Modular Design**: Functions must be reusable for future DFGT conversion
 3. **No MRI**: Skip anatomical data processing
-4. **Trigger Fix**: Invert triggers for C03/C04 during conversion
+4. **Trigger Fix**: Relabel Gen triggers for C03/C04 during conversion
 5. **BIDS IDs**: Use standard format sub-001, sub-002... (not sub-C01)
 
 ## Subject Handling Rules
 
 - Convert ONLY subjects present in `FGCM_Demographics.csv` (local-only list)
+- Use `megid` as the source ID (ignore `subid`)
 - Ignore #MERGE comments - convert recordings as-is
 - Fix inverted triggers for C03, C04 during conversion
 - Map C01->sub-001, C02->sub-002, etc.
@@ -149,7 +151,7 @@ Raw .ds filenames may still include FearGenTinn; keep those as-is.
 
 | Subject | Issue | Action |
 |---------|-------|--------|
-| C03, C04 | Inverted GS triggers | Fix during conversion |
+| C03, C04 | Gen triggers mis-assigned | Relabel Gen1↔Gen7, Gen2↔Gen6, Gen3↔Gen5 |
 |          |                      |                       |
 
 ## Output Structure

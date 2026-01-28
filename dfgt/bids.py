@@ -21,7 +21,8 @@ import pandas as pd
 from .config import (
     BIDS_ROOT,
     FGCM_CHANNEL_MAP,
-    FGCM_INVERTED_TRIGGER_SUBJECTS,
+    FGCM_CHANNEL_PREFIX_MAP,
+    FGCM_TRIGGER_LABELS,
     ANONYMIZE_DAYS_BACK,
     POWER_LINE_FREQ,
     SUBJECT_LIST_CSV,
@@ -33,6 +34,7 @@ from .utils import source_id_to_bids_id, fix_inverted_triggers, load_subject_lis
 def update_channel_types(
     raw: mne.io.Raw,
     channel_map: dict = FGCM_CHANNEL_MAP,
+    channel_prefix_map: dict = FGCM_CHANNEL_PREFIX_MAP,
 ) -> mne.io.Raw:
     """
     Update channel types based on study-specific mapping.
@@ -43,6 +45,8 @@ def update_channel_types(
         Raw MEG data
     channel_map : dict
         Mapping of channel names to BIDS channel types
+    channel_prefix_map : dict
+        Mapping of channel name prefixes to BIDS channel types
 
     Returns
     -------
@@ -54,10 +58,57 @@ def update_channel_types(
         name: ch_type for name, ch_type in channel_map.items() if name in raw.ch_names
     }
 
+    for ch_name in raw.ch_names:
+        if ch_name in existing_channels:
+            continue
+        for prefix, ch_type in channel_prefix_map.items():
+            if ch_name.startswith(prefix):
+                existing_channels[ch_name] = ch_type
+                break
+
     if existing_channels:
         raw.set_channel_types(existing_channels)
 
     return raw
+
+
+def check_trigger_consistency(
+    raw: mne.io.Raw,
+    subject_id: str,
+    task: str,
+    expected_labels: Optional[list] = None,
+) -> None:
+    """
+    Report trigger label consistency using annotations.
+
+    Parameters
+    ----------
+    raw : mne.io.Raw
+        Raw MEG data with annotations loaded
+    subject_id : str
+        Source subject ID
+    task : str
+        Task name
+    expected_labels : list, optional
+        Expected annotation labels
+    """
+    if raw.annotations is None or len(raw.annotations) == 0:
+        print(f"[TRIGGERS] {subject_id} {task}: no annotations found")
+        return
+
+    expected = set(expected_labels or [])
+    present = list(raw.annotations.description)
+    present_set = set(present)
+    missing = sorted(expected - present_set) if expected else []
+    unexpected = sorted(present_set - expected) if expected else []
+
+    counts = pd.Series(present).value_counts().to_dict()
+    print(f"[TRIGGERS] {subject_id} {task}: {len(present)} annotations")
+    print(f"[TRIGGERS] {subject_id} {task}: counts {counts}")
+    if missing:
+        print(f"[TRIGGERS] {subject_id} {task}: missing {missing}")
+    if unexpected:
+        print(f"[TRIGGERS] {subject_id} {task}: unexpected {unexpected}")
 
 
 def convert_to_bids(
@@ -65,8 +116,10 @@ def convert_to_bids(
     task: str,
     bids_root: Path = BIDS_ROOT,
     channel_map: dict = FGCM_CHANNEL_MAP,
+    channel_prefix_map: dict = FGCM_CHANNEL_PREFIX_MAP,
     anonymize: bool = True,
     overwrite: bool = False,
+    check_triggers: bool = True,
 ) -> BIDSPath:
     """
     Convert a single subject/task from CTF to BIDS format.
@@ -95,11 +148,15 @@ def convert_to_bids(
     raw = load_raw_ctf(subject_id, task)
 
     # Update channel types
-    raw = update_channel_types(raw, channel_map)
+    raw = update_channel_types(raw, channel_map, channel_prefix_map)
 
     # Fix inverted triggers if needed
-    if subject_id in FGCM_INVERTED_TRIGGER_SUBJECTS:
-        raw = fix_inverted_triggers(raw, subject_id)
+    raw = fix_inverted_triggers(raw, subject_id)
+
+    if check_triggers:
+        check_trigger_consistency(
+            raw, subject_id, task, expected_labels=FGCM_TRIGGER_LABELS
+        )
 
     # Set power line frequency
     raw.info["line_freq"] = POWER_LINE_FREQ
@@ -185,13 +242,16 @@ def create_participants_tsv(
     # Load subject list
     df = load_subject_list(subject_list_csv)
 
+    if "megid" not in df.columns:
+        raise ValueError("Subject list is missing required column 'megid'")
+
     # Create participants dataframe
     participants = pd.DataFrame(
         {
             "participant_id": [
-                f"sub-{source_id_to_bids_id(sid)}" for sid in df["subid"]
+                f"sub-{source_id_to_bids_id(sid)}" for sid in df["megid"]
             ],
-            "source_id": df["subid"],
+            "source_id": df["megid"],
         }
     )
 
@@ -209,6 +269,8 @@ def batch_convert(
     task_list: list,
     bids_root: Path = BIDS_ROOT,
     channel_map: dict = FGCM_CHANNEL_MAP,
+    channel_prefix_map: dict = FGCM_CHANNEL_PREFIX_MAP,
+    check_triggers: bool = True,
 ) -> dict:
     """
     Batch convert multiple subjects and tasks to BIDS.
@@ -239,6 +301,8 @@ def batch_convert(
                     task,
                     bids_root=bids_root,
                     channel_map=channel_map,
+                    channel_prefix_map=channel_prefix_map,
+                    check_triggers=check_triggers,
                 )
                 results["success"].append((subject, task))
                 print(f"OK: {subject} - {task}")
