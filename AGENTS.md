@@ -7,7 +7,7 @@ DFGT_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines (this file)
 ├── PLAN.md                   # Conversion pipeline plan and checklist
 ├── pyproject.toml            # Python project configuration
-├── FGT_Demographics.csv      # Subject list (41 FGT subjects, local-only, git-ignored)
+├── FGT_Demographics.csv      # Subject list (local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -94,7 +94,7 @@ Jupyter notebooks for interactive analysis and visualization.
 | **Data Format** | CTF MEG (.ds directories) |
 | **Source** | `/media/bianco/LaCie/DATA/DFGT/FGT_MEG_RAW/` |
 | **Output** | `/media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/` |
-| **Subjects** | 41 (from FGT_Demographics.csv, exp=FGT only) |
+| **Subjects** | From FGT_Demographics.csv (local-only, git-ignored) |
 | **Tasks** | audio_base, audio_cond, audio_test, visual_base, visual_cond, visual_test |
 | **Stack** | Python >=3.13, mne >=1.10.2, mne-bids >=0.17.0, uv |
 
@@ -138,7 +138,7 @@ FGT_MEG_RAW/
 
 ## Subject Handling Rules
 
-- Convert ONLY subjects present in `FGT_Demographics.csv` with exp=FGT (41 subjects)
+- Convert ONLY subjects present in `FGT_Demographics.csv` (local-only list)
 - Ignore #MERGE comments - convert recordings as-is
 - Fix inverted triggers for C03, C04 during conversion
 - Map C01->sub-001, C02->sub-002, etc.

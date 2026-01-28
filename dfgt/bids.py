@@ -196,7 +196,7 @@ def create_participants_tsv(
     )
 
     # Add additional columns if available in source
-    for col in ["age", "sex", "group"]:
+    for col in ["age", "sex"]:
         if col in df.columns:
             participants[col] = df[col]
 

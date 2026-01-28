@@ -5,7 +5,7 @@
 Convert FGT (FearGenTinn) CTF MEG data to BIDS format using mne-python and mne-bids.
 Design modular functions for future DFGT dataset reuse.
 
-**Scope**: 41 subjects, 6 tasks each = 246 MEG recordings
+**Scope**: subjects listed in FGT_Demographics.csv, 6 tasks each
 
 ---
 
@@ -16,7 +16,7 @@ DFGT_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines
 ├── PLAN.md                   # Conversion pipeline plan (this file)
 ├── pyproject.toml            # Python project configuration
-├── FGT_Demographics.csv      # Subject list (41 FGT subjects, local-only, git-ignored)
+├── FGT_Demographics.csv      # Subject list (local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -155,7 +155,7 @@ Expected output: No errors (warnings acceptable for MEG-specific fields)
 FGT -> BIDS Conversion Report
 =============================
 Date: YYYY-MM-DD
-Subjects attempted: 41
+Subjects attempted: <count>
 Subjects converted: XX
 Failed: XX
 
@@ -192,7 +192,7 @@ Document:
 - [ ] bids-validator passes
 
 ### Batch Conversion
-- [ ] All 41 subjects converted
+- [ ] All subjects converted
 - [ ] All 6 tasks per subject
 - [ ] dataset_description.json created
 - [ ] participants.tsv created

@@ -26,13 +26,6 @@ def _read_subject_list(subject_list_csv: Path) -> pd.DataFrame:
     return df
 
 
-def _filter_fgt_subjects(df: pd.DataFrame) -> pd.DataFrame:
-    if "exp" in df.columns:
-        exp = df["exp"].astype(str).str.strip().str.upper()
-        df = df.loc[exp == "FGT"].copy()
-    return df
-
-
 def _normalize_group_value(value: object) -> Optional[str]:
     if value is None:
         return None
@@ -129,11 +122,6 @@ def get_subject_group(
 
     row_values = row.iloc[0]
 
-    if "group" in df.columns:
-        group = _normalize_group_value(row_values.get("group"))
-        if group in {"A", "B"}:
-            return cast(Literal["A", "B"], group)
-
     if "randval" in df.columns:
         group = _normalize_group_value(row_values.get("randval"))
         if group in {"A", "B"}:
@@ -159,7 +147,7 @@ def load_subject_list(
     pd.DataFrame
         Subject information
     """
-    df = _filter_fgt_subjects(_read_subject_list(subject_list_csv))
+    df = _read_subject_list(subject_list_csv)
     if "subid" in df.columns:
         df["subid"] = df["subid"].astype(str).str.strip()
     return df
