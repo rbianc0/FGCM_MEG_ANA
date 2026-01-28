@@ -20,8 +20,8 @@ import pandas as pd
 
 from .config import (
     BIDS_ROOT,
-    FGT_CHANNEL_MAP,
-    FGT_INVERTED_TRIGGER_SUBJECTS,
+    FGCM_CHANNEL_MAP,
+    FGCM_INVERTED_TRIGGER_SUBJECTS,
     ANONYMIZE_DAYS_BACK,
     POWER_LINE_FREQ,
     SUBJECT_LIST_CSV,
@@ -32,7 +32,7 @@ from .utils import source_id_to_bids_id, fix_inverted_triggers, load_subject_lis
 
 def update_channel_types(
     raw: mne.io.Raw,
-    channel_map: dict = FGT_CHANNEL_MAP,
+    channel_map: dict = FGCM_CHANNEL_MAP,
 ) -> mne.io.Raw:
     """
     Update channel types based on study-specific mapping.
@@ -64,7 +64,7 @@ def convert_to_bids(
     subject_id: str,
     task: str,
     bids_root: Path = BIDS_ROOT,
-    channel_map: dict = FGT_CHANNEL_MAP,
+    channel_map: dict = FGCM_CHANNEL_MAP,
     anonymize: bool = True,
     overwrite: bool = False,
 ) -> BIDSPath:
@@ -98,7 +98,7 @@ def convert_to_bids(
     raw = update_channel_types(raw, channel_map)
 
     # Fix inverted triggers if needed
-    if subject_id in FGT_INVERTED_TRIGGER_SUBJECTS:
+    if subject_id in FGCM_INVERTED_TRIGGER_SUBJECTS:
         raw = fix_inverted_triggers(raw, subject_id)
 
     # Set power line frequency
@@ -133,7 +133,7 @@ def convert_to_bids(
 
 def create_dataset_description(
     bids_root: Path = BIDS_ROOT,
-    name: str = "FearGenTinn",
+    name: str = "FearGenCrossMod (FGCM)",
     authors: Optional[list] = None,
     license: str = "CC-BY-4.0",
     acknowledgements: str = "",
@@ -208,7 +208,7 @@ def batch_convert(
     subject_list: list,
     task_list: list,
     bids_root: Path = BIDS_ROOT,
-    channel_map: dict = FGT_CHANNEL_MAP,
+    channel_map: dict = FGCM_CHANNEL_MAP,
 ) -> dict:
     """
     Batch convert multiple subjects and tasks to BIDS.

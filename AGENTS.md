@@ -1,13 +1,13 @@
-# AGENTS.md - FGT MEG to BIDS Conversion
+# AGENTS.md - FGCM MEG to BIDS Conversion
 
 ## Project Structure
 
 ```
-DFGT_MEG_ANA_PY/
+FGCM_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines (this file)
 ├── PLAN.md                   # Conversion pipeline plan and checklist
 ├── pyproject.toml            # Python project configuration
-├── FGT_Demographics.csv      # Subject list (local-only, git-ignored)
+├── FGCM_Demographics.csv     # Subject list (local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -31,7 +31,7 @@ DFGT_MEG_ANA_PY/
 ### dfgt/config.py
 Central configuration file containing:
 - **Data paths**: MEG_RAW_ROOT, BIDS_ROOT, DERIVATIVES_ROOT, BEH_ROOT
-- **FGT channel map**: ECG, UADC005-007 (eyetrack), UPPT01 (stim)
+- **FGCM channel map**: ECG, UADC005-007 (eyetrack), UPPT01 (stim)
 - **Task mapping**: A/B group randomization (runs 01-06)
 - **Processing parameters**: ICA settings, power line frequency, anonymization
 
@@ -90,22 +90,24 @@ Jupyter notebooks for interactive analysis and visualization.
 
 | Item | Value |
 |------|-------|
-| **Study** | FGT (FearGenTinn) |
+| **Study** | FGCM (FearGenCrossMod) |
 | **Data Format** | CTF MEG (.ds directories) |
-| **Source** | `/media/bianco/LaCie/DATA/DFGT/FGT_MEG_RAW/` |
-| **Output** | `/media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/` |
-| **Subjects** | From FGT_Demographics.csv (local-only, git-ignored) |
+| **Source** | `/media/bianco/LaCie/DATA/DFGT/FGCM_MEG_RAW/` |
+| **Output** | `/media/bianco/LaCie/DATA/DFGT/FGCM_BIDS/` |
+| **Subjects** | From FGCM_Demographics.csv (local-only, git-ignored) |
 | **Tasks** | audio_base, audio_cond, audio_test, visual_base, visual_cond, visual_test |
 | **Stack** | Python >=3.13, mne >=1.10.2, mne-bids >=0.17.0, uv |
 
 ## Data Structure
 
 ```
-FGT_MEG_RAW/
+FGCM_MEG_RAW/
 └── C01/
     └── C01-1/
         └── A3122_FearGenTinn_20230425_01.ds  (runs 01-06)
 ```
+
+Raw .ds filenames may still include FearGenTinn; keep those as-is.
 
 ## Task Mapping (A/B Randomization)
 
@@ -118,7 +120,7 @@ FGT_MEG_RAW/
 | visual_cond | 05 | 02 |
 | visual_test | 06 | 03 |
 
-## Channel Configuration (FGT-specific)
+## Channel Configuration (FGCM-specific)
 
 | Channel | BIDS Type | Status |
 |---------|-----------|--------|
@@ -138,7 +140,7 @@ FGT_MEG_RAW/
 
 ## Subject Handling Rules
 
-- Convert ONLY subjects present in `FGT_Demographics.csv` (local-only list)
+- Convert ONLY subjects present in `FGCM_Demographics.csv` (local-only list)
 - Ignore #MERGE comments - convert recordings as-is
 - Fix inverted triggers for C03, C04 during conversion
 - Map C01->sub-001, C02->sub-002, etc.
@@ -153,7 +155,7 @@ FGT_MEG_RAW/
 ## Output Structure
 
 ```
-DFGT_BIDS/
+FGCM_BIDS/
 ├── dataset_description.json
 ├── participants.tsv
 ├── sub-001/

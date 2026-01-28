@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Batch convert FGT MEG data to BIDS format.
+Batch convert FGCM MEG data to BIDS format.
 
 Usage:
     python scripts/convert_to_bids.py [--subject C01] [--task audio_base] [--dry-run]
@@ -20,12 +20,12 @@ import argparse
 from pathlib import Path
 
 from dfgt.bids import batch_convert, create_dataset_description, create_participants_tsv
-from dfgt.config import BIDS_ROOT, FGT_TASKS, SUBJECT_LIST_CSV
+from dfgt.config import BIDS_ROOT, FGCM_TASKS, SUBJECT_LIST_CSV
 from dfgt.utils import get_valid_subjects
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert FGT MEG data to BIDS format")
+    parser = argparse.ArgumentParser(description="Convert FGCM MEG data to BIDS format")
     parser.add_argument(
         "--subject",
         type=str,
@@ -60,7 +60,7 @@ def main():
     if args.task:
         tasks = [args.task]
     else:
-        tasks = FGT_TASKS
+        tasks = FGCM_TASKS
 
     print(f"Subjects to convert: {len(subjects)}")
     print(f"Tasks per subject: {len(tasks)}")

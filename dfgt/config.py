@@ -14,13 +14,13 @@ from pathlib import Path
 DATA_ROOT = Path("/media/bianco/LaCie/DATA/DFGT")
 
 # Source MEG data (CTF format)
-MEG_RAW_ROOT = DATA_ROOT / "FGT_MEG_RAW"
+MEG_RAW_ROOT = DATA_ROOT / "FGCM_MEG_RAW"
 
 # Behavioral data
-BEH_ROOT = DATA_ROOT / "FGT_BEH"
+BEH_ROOT = DATA_ROOT / "FGCM_BEH"
 
 # BIDS output
-BIDS_ROOT = DATA_ROOT / "DFGT_BIDS"
+BIDS_ROOT = DATA_ROOT / "FGCM_BIDS"
 
 # Derivatives (preprocessed data)
 DERIVATIVES_ROOT = BIDS_ROOT / "derivatives"
@@ -32,27 +32,27 @@ PROJECT_ROOT = Path(__file__).parent.parent
 FIGURES_DIR = PROJECT_ROOT / "figures"
 
 # Subject list (tab-delimited, local-only)
-SUBJECT_LIST_CSV = PROJECT_ROOT / "FGT_Demographics.csv"
+SUBJECT_LIST_CSV = PROJECT_ROOT / "FGCM_Demographics.csv"
 
 # =============================================================================
-# FGT Channel Configuration
+# FGCM Channel Configuration
 # =============================================================================
 
-FGT_CHANNEL_MAP = {
+FGCM_CHANNEL_MAP = {
     "ECG": "ecg",
     "UADC005": "eyetrack",  # x position
     "UADC006": "eyetrack",  # y position
     "UADC007": "eyetrack",  # pupil
     "UPPT01": "stim",
-    # Note: EOGvert, EOGhor, UADC001 (Respiration) NOT present in FGT
+    # Note: EOGvert, EOGhor, UADC001 (Respiration) NOT present in FGCM
 }
 
 # =============================================================================
-# FGT Task Mapping (A/B Randomization)
+# FGCM Task Mapping (A/B Randomization)
 # =============================================================================
 
 # Task order depends on subject group (A or B)
-FGT_TASKS = [
+FGCM_TASKS = [
     "audio_base",
     "audio_cond",
     "audio_test",
@@ -62,7 +62,7 @@ FGT_TASKS = [
 ]
 
 # Run number -> Task mapping for each group
-FGT_TASK_MAPPING_A = {
+FGCM_TASK_MAPPING_A = {
     "01": "audio_base",
     "02": "audio_cond",
     "03": "audio_test",
@@ -71,7 +71,7 @@ FGT_TASK_MAPPING_A = {
     "06": "visual_test",
 }
 
-FGT_TASK_MAPPING_B = {
+FGCM_TASK_MAPPING_B = {
     "01": "visual_base",
     "02": "visual_cond",
     "03": "visual_test",
@@ -85,10 +85,17 @@ FGT_TASK_MAPPING_B = {
 # =============================================================================
 
 # Subjects requiring trigger inversion during conversion
-FGT_INVERTED_TRIGGER_SUBJECTS = ["C03", "C04"]
+FGCM_INVERTED_TRIGGER_SUBJECTS = ["C03", "C04"]
 
-# Subjects with split recordings (convert as-is, ignore #MERGE)
-FGT_SPLIT_RECORDING_SUBJECTS = ["C21", "C22", "C25", "C26", "C27", "C28", "C32", "C33"]
+# =============================================================================
+# Backward Compatibility Aliases
+# =============================================================================
+
+FGT_CHANNEL_MAP = FGCM_CHANNEL_MAP
+FGT_TASKS = FGCM_TASKS
+FGT_TASK_MAPPING_A = FGCM_TASK_MAPPING_A
+FGT_TASK_MAPPING_B = FGCM_TASK_MAPPING_B
+FGT_INVERTED_TRIGGER_SUBJECTS = FGCM_INVERTED_TRIGGER_SUBJECTS
 
 # =============================================================================
 # Processing Parameters

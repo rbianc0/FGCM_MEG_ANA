@@ -2,21 +2,23 @@
 
 ## Overview
 
-Convert FGT (FearGenTinn) CTF MEG data to BIDS format using mne-python and mne-bids.
+Convert FGCM (FearGenCrossMod) CTF MEG data to BIDS format using mne-python and mne-bids.
 Design modular functions for future DFGT dataset reuse.
 
-**Scope**: subjects listed in FGT_Demographics.csv, 6 tasks each
+**Scope**: subjects listed in FGCM_Demographics.csv, 6 tasks each
+
+Raw .ds filenames may still include FearGenTinn; keep those as-is.
 
 ---
 
 ## Project Structure
 
 ```
-DFGT_MEG_ANA_PY/
+FGCM_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines
 ├── PLAN.md                   # Conversion pipeline plan (this file)
 ├── pyproject.toml            # Python project configuration
-├── FGT_Demographics.csv      # Subject list (local-only, git-ignored)
+├── FGCM_Demographics.csv     # Subject list (local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -41,7 +43,7 @@ DFGT_MEG_ANA_PY/
 
 ### Step 1.1: Sync uv environment
 ```bash
-cd /home/bianco/Documents/DFGT/DFGT_MEG_ANA_PY
+cd /home/bianco/Documents/DFGT/FGCM_MEG_ANA_PY
 uv sync
 ```
 
@@ -66,10 +68,10 @@ mag="MEGGRADAXIAL"
 ### Step 1.4: Verify paths
 ```bash
 # Check source data accessible
-ls /media/bianco/LaCie/DATA/DFGT/FGT_MEG_RAW/C01/
+ls /media/bianco/LaCie/DATA/DFGT/FGCM_MEG_RAW/C01/
 
 # Check output directory exists
-mkdir -p /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS
+mkdir -p /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS
 ```
 
 ---
@@ -89,7 +91,7 @@ convert_to_bids("C01", "audio_base")
 
 ```bash
 # Check files created
-ls -la /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/sub-001/meg/
+ls -la /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS/sub-001/meg/
 
 # Expected files:
 # sub-001_task-audiobase_meg.ds/
@@ -100,7 +102,7 @@ ls -la /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/sub-001/meg/
 ### Step 2.3: Verify channels.tsv
 
 ```bash
-cat /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/sub-001/meg/sub-001_task-audiobase_channels.tsv
+cat /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS/sub-001/meg/sub-001_task-audiobase_channels.tsv
 ```
 
 Confirm:
@@ -112,7 +114,7 @@ Confirm:
 ### Step 2.4: Run bids-validator
 
 ```bash
-bids-validator /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS --verbose
+bids-validator /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS --verbose
 ```
 
 ---
@@ -142,7 +144,7 @@ The script automatically creates:
 ### Step 4.1: Final BIDS validation
 
 ```bash
-bids-validator /media/bianco/LaCie/DATA/DFGT/DFGT_BIDS
+bids-validator /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS
 ```
 
 Expected output: No errors (warnings acceptable for MEG-specific fields)
@@ -152,7 +154,7 @@ Expected output: No errors (warnings acceptable for MEG-specific fields)
 ```python
 # conversion_report.txt
 """
-FGT -> BIDS Conversion Report
+FGCM -> BIDS Conversion Report
 =============================
 Date: YYYY-MM-DD
 Subjects attempted: <count>
@@ -207,11 +209,11 @@ Document:
 ## File Structure After Completion
 
 ```
-DFGT_MEG_ANA_PY/
+FGCM_MEG_ANA_PY/
 ├── AGENTS.md
 ├── PLAN.md
 ├── pyproject.toml
-├── FGT_Demographics.csv
+├── FGCM_Demographics.csv
 ├── dfgt/
 │   ├── __init__.py
 │   ├── config.py
@@ -225,7 +227,7 @@ DFGT_MEG_ANA_PY/
 │   └── 01_data_exploration.ipynb
 └── figures/
 
-DFGT_BIDS/
+FGCM_BIDS/
 ├── dataset_description.json
 ├── participants.tsv
 ├── README                       # Optional

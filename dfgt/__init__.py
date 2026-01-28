@@ -2,7 +2,7 @@
 DFGT MEG Analysis Package
 =========================
 
-A modular Python package for MEG data analysis in the DFGT/FGT studies.
+A modular Python package for MEG data analysis in the DFGT/FGCM studies.
 
 Modules:
     io: Data loading utilities (CTF, BIDS, preprocessed)

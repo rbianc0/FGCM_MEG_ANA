@@ -13,7 +13,7 @@ from pathlib import Path
 # =============================================================================
 
 # Path to the BIDS root directory
-BIDS_ROOT = Path("/path/to/your/data/DFGT_BIDS")
+BIDS_ROOT = Path("/path/to/your/data/FGCM_BIDS")
 
 # Path to derivatives (usually inside BIDS root)
 DERIVATIVES_ROOT = BIDS_ROOT / "derivatives"

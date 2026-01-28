@@ -16,7 +16,7 @@ import mne
 import numpy as np
 import pandas as pd
 
-from .config import SUBJECT_LIST_CSV, FGT_INVERTED_TRIGGER_SUBJECTS
+from .config import SUBJECT_LIST_CSV, FGCM_INVERTED_TRIGGER_SUBJECTS
 
 
 def _read_subject_list(subject_list_csv: Path) -> pd.DataFrame:
@@ -197,7 +197,7 @@ def fix_inverted_triggers(
     mne.io.Raw
         Raw data with corrected triggers
     """
-    if subject_id not in FGT_INVERTED_TRIGGER_SUBJECTS:
+    if subject_id not in FGCM_INVERTED_TRIGGER_SUBJECTS:
         return raw
 
     # Get trigger channel

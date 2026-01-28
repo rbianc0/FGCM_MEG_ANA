@@ -21,8 +21,8 @@ from .config import (
     BIDS_ROOT,
     DERIVATIVES_ROOT,
     BEH_ROOT,
-    FGT_TASK_MAPPING_A,
-    FGT_TASK_MAPPING_B,
+    FGCM_TASK_MAPPING_A,
+    FGCM_TASK_MAPPING_B,
 )
 from .utils import get_subject_group, source_id_to_bids_id
 
@@ -56,7 +56,7 @@ def get_raw_path(
     """
     # Determine run number based on subject group
     group = get_subject_group(subject_id)
-    task_mapping = FGT_TASK_MAPPING_A if group == "A" else FGT_TASK_MAPPING_B
+    task_mapping = FGCM_TASK_MAPPING_A if group == "A" else FGCM_TASK_MAPPING_B
 
     # Find run number for this task
     run_number = None

@@ -19,5 +19,6 @@ config.py
 *.fwd
 *.inv
 FGT_Demographics.csv
+FGCM_Demographics.csv
 results/
 figures/
