@@ -10,13 +10,50 @@ Functions:
 """
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 import mne
 import numpy as np
 import pandas as pd
 
 from .config import SUBJECT_LIST_CSV, FGT_INVERTED_TRIGGER_SUBJECTS
+
+
+def _read_subject_list(subject_list_csv: Path) -> pd.DataFrame:
+    df = pd.read_csv(subject_list_csv, sep="\t")
+    if df.shape[1] == 1:
+        df = pd.read_csv(subject_list_csv)
+    return df
+
+
+def _filter_fgt_subjects(df: pd.DataFrame) -> pd.DataFrame:
+    if "exp" in df.columns:
+        exp = df["exp"].astype(str).str.strip().str.upper()
+        df = df.loc[exp == "FGT"].copy()
+    return df
+
+
+def _normalize_group_value(value: object) -> Optional[str]:
+    if value is None:
+        return None
+
+    if isinstance(value, float) and np.isnan(value):
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    upper = text.upper()
+    if upper[0] in {"A", "B"}:
+        return upper[0]
+
+    try:
+        num = int(float(upper))
+    except ValueError:
+        return None
+
+    return "A" if num == 0 else "B"
 
 
 def source_id_to_bids_id(source_id: str) -> str:
@@ -82,7 +119,7 @@ def get_subject_group(
     str
         Group letter ("A" or "B")
     """
-    df = pd.read_csv(subject_list_csv)
+    df = load_subject_list(subject_list_csv)
 
     # Find subject row
     row = df[df["subid"] == subject_id]
@@ -90,23 +127,27 @@ def get_subject_group(
     if row.empty:
         raise ValueError(f"Subject {subject_id} not found in subject list")
 
-    # Get group from randval or similar column
-    # Adjust column name based on actual CSV structure
+    row_values = row.iloc[0]
+
+    if "group" in df.columns:
+        group = _normalize_group_value(row_values.get("group"))
+        if group in {"A", "B"}:
+            return cast(Literal["A", "B"], group)
+
     if "randval" in df.columns:
-        randval = row["randval"].iloc[0]
-        return "A" if randval == 0 else "B"
-    elif "group" in df.columns:
-        return row["group"].iloc[0]
-    else:
-        # Default to A if no group info available
-        return "A"
+        group = _normalize_group_value(row_values.get("randval"))
+        if group in {"A", "B"}:
+            return cast(Literal["A", "B"], group)
+
+    # Default to A if no group info available
+    return "A"
 
 
 def load_subject_list(
     subject_list_csv: Path = SUBJECT_LIST_CSV,
 ) -> pd.DataFrame:
     """
-    Load the subject list CSV.
+    Load the subject list (tab-delimited file).
 
     Parameters
     ----------
@@ -118,7 +159,10 @@ def load_subject_list(
     pd.DataFrame
         Subject information
     """
-    return pd.read_csv(subject_list_csv)
+    df = _filter_fgt_subjects(_read_subject_list(subject_list_csv))
+    if "subid" in df.columns:
+        df["subid"] = df["subid"].astype(str).str.strip()
+    return df
 
 
 def get_valid_subjects(
@@ -138,6 +182,8 @@ def get_valid_subjects(
         List of subject IDs (e.g., ["C01", "C02", ...])
     """
     df = load_subject_list(subject_list_csv)
+    if "subid" not in df.columns:
+        raise ValueError("Subject list is missing required column 'subid'")
     return df["subid"].tolist()
 
 

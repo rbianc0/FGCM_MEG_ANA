@@ -27,7 +27,7 @@ from .config import (
     SUBJECT_LIST_CSV,
 )
 from .io import load_raw_ctf, get_bids_path
-from .utils import source_id_to_bids_id, fix_inverted_triggers
+from .utils import source_id_to_bids_id, fix_inverted_triggers, load_subject_list
 
 
 def update_channel_types(
@@ -183,7 +183,7 @@ def create_participants_tsv(
         Path to CSV with subject information
     """
     # Load subject list
-    df = pd.read_csv(subject_list_csv)
+    df = load_subject_list(subject_list_csv)
 
     # Create participants dataframe
     participants = pd.DataFrame(

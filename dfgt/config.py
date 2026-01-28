@@ -31,8 +31,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 # Figures output
 FIGURES_DIR = PROJECT_ROOT / "figures"
 
-# Subject list CSV
-SUBJECT_LIST_CSV = PROJECT_ROOT / "FGT_MEG_subject_list.csv"
+# Subject list (tab-delimited, local-only)
+SUBJECT_LIST_CSV = PROJECT_ROOT / "FGT_Demographics.csv"
 
 # =============================================================================
 # FGT Channel Configuration

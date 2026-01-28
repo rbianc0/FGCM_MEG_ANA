@@ -7,7 +7,7 @@ DFGT_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines (this file)
 ├── PLAN.md                   # Conversion pipeline plan and checklist
 ├── pyproject.toml            # Python project configuration
-├── FGT_MEG_subject_list.csv  # Subject list (41 subjects)
+├── FGT_Demographics.csv      # Subject list (41 FGT subjects, local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -66,7 +66,7 @@ Shared utilities:
 - `bids_id_to_source_id()`: Convert 001 → C01
 - `get_subject_group()`: Determine A/B group
 - `fix_inverted_triggers()`: Fix triggers for C03/C04
-- `load_subject_list()`: Load subject CSV
+- `load_subject_list()`: Load subject list file
 
 ### scripts/convert_to_bids.py
 CLI script for batch conversion:
@@ -94,7 +94,7 @@ Jupyter notebooks for interactive analysis and visualization.
 | **Data Format** | CTF MEG (.ds directories) |
 | **Source** | `/media/bianco/LaCie/DATA/DFGT/FGT_MEG_RAW/` |
 | **Output** | `/media/bianco/LaCie/DATA/DFGT/DFGT_BIDS/` |
-| **Subjects** | 41 (from FGT_MEG_subject_list.csv only) |
+| **Subjects** | 41 (from FGT_Demographics.csv, exp=FGT only) |
 | **Tasks** | audio_base, audio_cond, audio_test, visual_base, visual_cond, visual_test |
 | **Stack** | Python >=3.13, mne >=1.10.2, mne-bids >=0.17.0, uv |
 
@@ -138,7 +138,7 @@ FGT_MEG_RAW/
 
 ## Subject Handling Rules
 
-- Convert ONLY subjects present in `FGT_MEG_subject_list.csv` (41 subjects)
+- Convert ONLY subjects present in `FGT_Demographics.csv` with exp=FGT (41 subjects)
 - Ignore #MERGE comments - convert recordings as-is
 - Fix inverted triggers for C03, C04 during conversion
 - Map C01->sub-001, C02->sub-002, etc.
@@ -148,7 +148,7 @@ FGT_MEG_RAW/
 | Subject | Issue | Action |
 |---------|-------|--------|
 | C03, C04 | Inverted GS triggers | Fix during conversion |
-| C21, C22, C25-C28, C32, C33 | Split recordings (#MERGE) | Ignore, convert as-is |
+|          |                      |                       |
 
 ## Output Structure
 
@@ -226,7 +226,7 @@ gh pr create --title "Feature: Description" --body "Summary of changes"
 ```
 
 ### Pull Request Requirements
-1. All changes must go through PR review before merging to `master`
+1. All changes must go through PR review before merging to `main`
 2. PR title should be descriptive
 3. PR body should include:
    - Summary of changes
@@ -234,14 +234,4 @@ gh pr create --title "Feature: Description" --body "Summary of changes"
    - Testing notes if applicable
 
 ### Protected Branches
-- `master` - Production-ready code, requires PR review
-
----
-
-## Follow-up Questions
-
-1. What metadata should go in dataset_description.json (authors, funding, license)?
-2. Should participants.tsv include additional columns (age, sex, group)?
-3. Are there any events/annotations to extract beyond channel triggers?
-4. PowerLineFrequency: 50Hz (Europe) confirmed?
-5. Desired anonymization: How many days back to shift dates?
+- `main` - Production-ready code, requires PR review

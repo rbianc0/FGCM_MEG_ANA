@@ -16,7 +16,7 @@ DFGT_MEG_ANA_PY/
 ├── AGENTS.md                 # Project specifications and guidelines
 ├── PLAN.md                   # Conversion pipeline plan (this file)
 ├── pyproject.toml            # Python project configuration
-├── FGT_MEG_subject_list.csv  # Subject list (41 subjects)
+├── FGT_Demographics.csv      # Subject list (41 FGT subjects, local-only, git-ignored)
 │
 ├── dfgt/                     # Main Python package (reusable modules)
 │   ├── __init__.py           # Package initialization
@@ -211,7 +211,7 @@ DFGT_MEG_ANA_PY/
 ├── AGENTS.md
 ├── PLAN.md
 ├── pyproject.toml
-├── FGT_MEG_subject_list.csv
+├── FGT_Demographics.csv
 ├── dfgt/
 │   ├── __init__.py
 │   ├── config.py
