@@ -131,6 +131,25 @@ Raw .ds filenames may still include FearGenTinn; keep those as-is.
 | EOGvert/EOGhor | - | NOT PRESENT |
 | UADC001 (Respiration) | - | NOT PRESENT |
 
+## Trigger Labels (CTF markers)
+
+Labels are taken from CTF markers (MarkerFile.mrk) and written to BIDS `events.tsv`.
+
+Full label union across tasks:
+`startACQ`, `CSminus`, `CSplusUnpaired`, `CSplusPaired`, `Gen1`, `Gen2`, `Gen3`,
+`Gen4`, `Gen5`, `Gen6`, `Gen7`, `USface`, `WarningTrial`, `acTrgBeep`, `acTrgScream`.
+
+Task-specific label sets (from a full C01 conversion):
+
+| Task | Labels |
+|------|--------|
+| audio_base | startACQ, CSminus, CSplusUnpaired, Gen1-Gen7, USface, WarningTrial, acTrgBeep, acTrgScream |
+| audio_cond | startACQ, CSminus, CSplusUnpaired, CSplusPaired, USface, acTrgBeep, acTrgScream |
+| audio_test | startACQ, CSminus, CSplusUnpaired, CSplusPaired, Gen1-Gen7, USface, acTrgBeep, acTrgScream |
+| visual_base | startACQ, CSminus, CSplusUnpaired, Gen1-Gen7, USface, WarningTrial, acTrgScream |
+| visual_cond | startACQ, CSminus, CSplusUnpaired, CSplusPaired, USface, acTrgScream |
+| visual_test | startACQ, CSminus, CSplusUnpaired, CSplusPaired, Gen1-Gen7, USface, acTrgScream |
+
 ## Critical Requirements
 
 1. **MEGGRADAXIAL Support**: Use mne-bids >=0.17.0 (includes MEGGRADAXIAL mapping)

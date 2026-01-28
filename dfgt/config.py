@@ -91,11 +91,95 @@ FGCM_TASK_MAPPING_B = {
 # Subjects requiring trigger inversion during conversion
 FGCM_INVERTED_TRIGGER_SUBJECTS = ["C03", "C04"]
 
-# Expected marker labels in CTF datasets (used for consistency checks)
+# Expected marker labels by task (used for consistency checks)
+FGCM_TRIGGER_LABELS_BY_TASK = {
+    "audio_base": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "Gen1",
+        "Gen2",
+        "Gen3",
+        "Gen4",
+        "Gen5",
+        "Gen6",
+        "Gen7",
+        "USface",
+        "WarningTrial",
+        "acTrgBeep",
+        "acTrgScream",
+    ],
+    "audio_cond": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "CSplusPaired",
+        "USface",
+        "acTrgBeep",
+        "acTrgScream",
+    ],
+    "audio_test": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "CSplusPaired",
+        "Gen1",
+        "Gen2",
+        "Gen3",
+        "Gen4",
+        "Gen5",
+        "Gen6",
+        "Gen7",
+        "USface",
+        "acTrgBeep",
+        "acTrgScream",
+    ],
+    "visual_base": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "Gen1",
+        "Gen2",
+        "Gen3",
+        "Gen4",
+        "Gen5",
+        "Gen6",
+        "Gen7",
+        "USface",
+        "WarningTrial",
+        "acTrgScream",
+    ],
+    "visual_cond": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "CSplusPaired",
+        "USface",
+        "acTrgScream",
+    ],
+    "visual_test": [
+        "startACQ",
+        "CSminus",
+        "CSplusUnpaired",
+        "CSplusPaired",
+        "Gen1",
+        "Gen2",
+        "Gen3",
+        "Gen4",
+        "Gen5",
+        "Gen6",
+        "Gen7",
+        "USface",
+        "acTrgScream",
+    ],
+}
+
+# Full trigger label union across tasks
 FGCM_TRIGGER_LABELS = [
     "startACQ",
     "CSminus",
     "CSplusUnpaired",
+    "CSplusPaired",
     "Gen1",
     "Gen2",
     "Gen3",
@@ -107,6 +191,13 @@ FGCM_TRIGGER_LABELS = [
     "WarningTrial",
     "acTrgBeep",
     "acTrgScream",
+]
+
+# Dataset authors for dataset_description.json
+FGCM_AUTHORS = [
+    "Riccardo Bianco",
+    "Alejandro Espino",
+    "Markus junghoefer",
 ]
 
 # =============================================================================

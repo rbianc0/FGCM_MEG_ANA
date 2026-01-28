@@ -11,11 +11,14 @@ Functions:
 """
 
 from pathlib import Path
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+import json
 
 import mne
+from mne._fiff.constants import FIFF
 from mne_bids import write_raw_bids, BIDSPath, make_dataset_description
+from mne_bids import write as mne_bids_write
 import pandas as pd
 
 from .config import (
@@ -23,12 +26,34 @@ from .config import (
     FGCM_CHANNEL_MAP,
     FGCM_CHANNEL_PREFIX_MAP,
     FGCM_TRIGGER_LABELS,
+    FGCM_TRIGGER_LABELS_BY_TASK,
+    FGCM_AUTHORS,
     ANONYMIZE_DAYS_BACK,
     POWER_LINE_FREQ,
     SUBJECT_LIST_CSV,
 )
 from .io import load_raw_ctf, get_bids_path
 from .utils import source_id_to_bids_id, fix_inverted_triggers, load_subject_list
+
+_MNE_BIDS_CH_MAPPING_PATCHED = False
+
+
+def _patch_mne_bids_channel_mapping() -> None:
+    """Patch mne-bids mapping for CTF axial grads and refs."""
+    global _MNE_BIDS_CH_MAPPING_PATCHED
+    if _MNE_BIDS_CH_MAPPING_PATCHED:
+        return
+
+    original = mne_bids_write._get_ch_type_mapping
+
+    def _get_ch_type_mapping_fgcm(fro="mne", to="bids"):
+        mapping = original(fro=fro, to=to)
+        mapping["mag"] = "MEGGRADAXIAL"
+        mapping["ref_meg"] = "MEGREFGRADAXIAL"
+        return mapping
+
+    mne_bids_write._get_ch_type_mapping = _get_ch_type_mapping_fgcm
+    _MNE_BIDS_CH_MAPPING_PATCHED = True
 
 
 def update_channel_types(
@@ -68,6 +93,15 @@ def update_channel_types(
 
     if existing_channels:
         raw.set_channel_types(existing_channels)
+
+        for ch_name, ch_type in existing_channels.items():
+            if ch_type not in {"eyegaze", "pupil"}:
+                continue
+            ch_idx = raw.ch_names.index(ch_name)
+            if ch_type == "eyegaze":
+                raw.info["chs"][ch_idx]["coil_type"] = FIFF.FIFFV_COIL_EYETRACK_POS
+            else:
+                raw.info["chs"][ch_idx]["coil_type"] = FIFF.FIFFV_COIL_EYETRACK_PUPIL
 
     return raw
 
@@ -145,7 +179,7 @@ def convert_to_bids(
         Path to the written BIDS data
     """
     # Load raw data
-    raw = load_raw_ctf(subject_id, task)
+    raw = load_raw_ctf(subject_id, task, preload=False)
 
     # Update channel types
     raw = update_channel_types(raw, channel_map, channel_prefix_map)
@@ -154,8 +188,9 @@ def convert_to_bids(
     raw = fix_inverted_triggers(raw, subject_id)
 
     if check_triggers:
+        expected_labels = FGCM_TRIGGER_LABELS_BY_TASK.get(task)
         check_trigger_consistency(
-            raw, subject_id, task, expected_labels=FGCM_TRIGGER_LABELS
+            raw, subject_id, task, expected_labels=expected_labels
         )
 
     # Set power line frequency
@@ -172,10 +207,47 @@ def convert_to_bids(
         root=bids_root,
     )
 
+    participants_tsv = bids_root / "participants.tsv"
+    if not overwrite and participants_tsv.exists():
+        try:
+            df_part = pd.read_csv(participants_tsv, sep="\t")
+            subject_tag = f"sub-{bids_subject_id}"
+            if (
+                "participant_id" in df_part.columns
+                and subject_tag in df_part["participant_id"].astype(str).tolist()
+            ):
+                overwrite = True
+                print(
+                    f"Info: {subject_tag} already in participants.tsv, using overwrite"
+                )
+        except Exception:
+            overwrite = True
+            print("Info: participants.tsv exists; using overwrite")
+
     # Anonymization settings
     anonymize_dict = None
     if anonymize:
-        anonymize_dict = {"daysback": ANONYMIZE_DAYS_BACK}
+        daysback = ANONYMIZE_DAYS_BACK
+        meas_date = raw.info.get("meas_date")
+        if meas_date is not None:
+            if not isinstance(meas_date, datetime):
+                meas_date = mne.utils._stamp_to_dt(meas_date)
+            if meas_date.tzinfo is None:
+                meas_date = meas_date.replace(tzinfo=timezone.utc)
+            int32_min = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(
+                seconds=-(2**31)
+            )
+            max_daysback = max(0, (meas_date - int32_min).days)
+            if daysback > max_daysback:
+                print(
+                    f"Warning: daysback {daysback} too large for {subject_id}; "
+                    f"using {max_daysback} instead"
+                )
+                daysback = max_daysback
+
+        anonymize_dict = {"daysback": daysback}
+
+    _patch_mne_bids_channel_mapping()
 
     # Write to BIDS
     write_raw_bids(
@@ -217,7 +289,7 @@ def create_dataset_description(
     make_dataset_description(
         path=bids_root,
         name=name,
-        authors=authors or [],
+        authors=authors or FGCM_AUTHORS,
         data_license=license,
         acknowledgements=acknowledgements,
         funding=funding or [],
@@ -262,6 +334,23 @@ def create_participants_tsv(
 
     # Write TSV
     participants.to_csv(bids_root / "participants.tsv", sep="\t", index=False)
+
+    participants_json_path = bids_root / "participants.json"
+    if participants_json_path.exists():
+        with participants_json_path.open("r", encoding="utf-8") as f:
+            participants_json = json.load(f)
+    else:
+        participants_json = {}
+
+    participants_json.setdefault(
+        "source_id",
+        {
+            "Description": "Original MEG subject identifier (e.g., C01)",
+        },
+    )
+
+    with participants_json_path.open("w", encoding="utf-8") as f:
+        json.dump(participants_json, f, indent=4)
 
 
 def batch_convert(
