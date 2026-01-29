@@ -104,10 +104,11 @@ Jupyter notebooks for interactive analysis and visualization.
 FGCM_MEG_RAW/
 └── C01/
     └── C01-1/
-        └── A3122_FearGenTinn_20230425_01.ds  (runs 01-06)
+        └── A3122_FearGenTinn_20230425_01.ds  (runs 01-06; some subjects use 001-006)
 ```
 
 Raw .ds filenames may still include FearGenTinn; keep those as-is.
+Run suffix padding can be 2 or 3 digits (e.g., 01 or 001).
 
 ## Task Mapping (A/B Randomization)
 

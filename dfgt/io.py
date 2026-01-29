@@ -11,6 +11,7 @@ Functions:
 """
 
 from pathlib import Path
+import re
 from typing import Optional, Literal
 
 import mne
@@ -74,15 +75,40 @@ def get_raw_path(
     if not subject_dir.exists():
         raise FileNotFoundError(f"Subject directory not found: {subject_dir}")
 
-    # Find .ds file matching run number
-    ds_files = list(subject_dir.glob(f"*_{run_number}.ds"))
+    try:
+        target_run = int(run_number)
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid run number '{run_number}' for task '{task}'"
+        ) from exc
 
+    ds_files = sorted(subject_dir.glob("*.ds"))
     if not ds_files:
+        raise FileNotFoundError(f"No .ds directories found in {subject_dir}")
+
+    run_pattern = re.compile(r"_(\d+)\.ds$")
+    run_map: dict[int, list[Path]] = {}
+    for ds_path in ds_files:
+        match = run_pattern.search(ds_path.name)
+        if not match:
+            continue
+        run_int = int(match.group(1))
+        run_map.setdefault(run_int, []).append(ds_path)
+
+    candidates = run_map.get(target_run, [])
+    if not candidates:
+        available_files = ", ".join(path.name for path in ds_files)
         raise FileNotFoundError(
-            f"No .ds file found for run {run_number} in {subject_dir}"
+            f"No .ds file found for run {run_number} in {subject_dir}. "
+            f"Available files: {available_files}"
+        )
+    if len(candidates) > 1:
+        matches = ", ".join(path.name for path in candidates)
+        raise FileExistsError(
+            f"Multiple .ds files found for run {run_number} in {subject_dir}: {matches}"
         )
 
-    return ds_files[0]
+    return candidates[0]
 
 
 def load_raw_ctf(
