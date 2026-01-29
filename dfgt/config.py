@@ -22,6 +22,9 @@ BEH_ROOT = DATA_ROOT / "FGCM_BEH"
 # BIDS output
 BIDS_ROOT = DATA_ROOT / "FGCM_BIDS"
 
+# Polhemus headshape files
+POS_ROOT = DATA_ROOT.parent / "pos-files"
+
 # Derivatives (preprocessed data)
 DERIVATIVES_ROOT = BIDS_ROOT / "derivatives"
 

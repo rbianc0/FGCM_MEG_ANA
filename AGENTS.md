@@ -50,6 +50,7 @@ BIDS conversion functions:
 - `check_trigger_consistency()`: Report trigger label counts per run
 - `create_dataset_description()`: Generate dataset_description.json
 - `create_participants_tsv()`: Generate participants.tsv
+- `add_headshape_files()`: Attach Polhemus headshape files to BIDS
 
 ### dfgt/preproc.py
 MEG preprocessing pipeline:
@@ -80,6 +81,12 @@ PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --subject C01
 
 # Dry run
 PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --dry-run
+
+# Add Polhemus headshape files only
+PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --only-headshape
+
+# Convert then add headshape files
+PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --add-headshape
 ```
 
 ### Environment and Validation (uv)
