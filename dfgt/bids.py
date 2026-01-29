@@ -1,19 +1,23 @@
 """
 BIDS conversion module.
 
-Functions for converting CTF MEG data to BIDS format.
+Functions for converting CTF MEG data to BIDS format and managing
+post-conversion metadata.
 
 Functions:
     convert_to_bids: Convert a single subject/task to BIDS
     update_channel_types: Apply study-specific channel type mappings
     create_dataset_description: Generate dataset_description.json
     create_participants_tsv: Generate participants.tsv
+    add_headshape_files: Attach Polhemus headshape files to BIDS
 """
 
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import json
+import shutil
+import statistics
 
 import mne
 from mne._fiff.constants import FIFF
@@ -23,6 +27,7 @@ import pandas as pd
 
 from .config import (
     BIDS_ROOT,
+    POS_ROOT,
     FGCM_CHANNEL_MAP,
     FGCM_CHANNEL_PREFIX_MAP,
     FGCM_TRIGGER_LABELS,
@@ -33,7 +38,12 @@ from .config import (
     SUBJECT_LIST_CSV,
 )
 from .io import load_raw_ctf, get_bids_path
-from .utils import source_id_to_bids_id, fix_inverted_triggers, load_subject_list
+from .utils import (
+    source_id_to_bids_id,
+    bids_id_to_source_id,
+    fix_inverted_triggers,
+    load_subject_list,
+)
 
 _MNE_BIDS_CH_MAPPING_PATCHED = False
 
@@ -351,6 +361,369 @@ def create_participants_tsv(
 
     with participants_json_path.open("w", encoding="utf-8") as f:
         json.dump(participants_json, f, indent=4)
+
+
+def _normalize_source_id(subject_id: str) -> str:
+    """
+    Normalize a subject identifier to the source (megid) format.
+
+    Parameters
+    ----------
+    subject_id : str
+        Subject ID that may be in source (C01), BIDS (001), or
+        BIDS-tagged (sub-001) form.
+
+    Returns
+    -------
+    str
+        Source-style subject ID (e.g., "C01").
+    """
+    source_id = subject_id.strip()
+    if source_id.startswith("sub-"):
+        source_id = source_id.replace("sub-", "", 1)
+    if source_id.isdigit():
+        source_id = bids_id_to_source_id(source_id)
+    return source_id
+
+
+def _select_pos_file(
+    ibbid: str,
+    pos_root: Path,
+    prefer_non_face: bool = True,
+) -> Optional[Path]:
+    """
+    Select a Polhemus .pos file based on ibbid.
+
+    Parameters
+    ----------
+    ibbid : str
+        Identifier used to match files (e.g., "A3122").
+    pos_root : Path
+        Directory containing .pos files.
+    prefer_non_face : bool
+        Prefer filenames that do not include "Face" if available.
+
+    Returns
+    -------
+    Path or None
+        Selected .pos file or None if no matches are found.
+    """
+    if not ibbid:
+        return None
+
+    candidates = sorted(pos_root.glob(f"{ibbid}*.pos"))
+    if not candidates:
+        return None
+
+    if prefer_non_face:
+        non_face = [p for p in candidates if "face" not in p.name.lower()]
+        if non_face:
+            candidates = non_face
+
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def _parse_pos_points(pos_path: Path) -> list[tuple[float, float, float]]:
+    """
+    Parse xyz points from a Polhemus .pos file.
+
+    Parameters
+    ----------
+    pos_path : Path
+        Path to the .pos file.
+
+    Returns
+    -------
+    list of tuple
+        List of (x, y, z) points parsed from the file.
+    """
+    points: list[tuple[float, float, float]] = []
+    with pos_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            tokens = stripped.split()
+            numbers: list[float] = []
+            for token in tokens:
+                try:
+                    numbers.append(float(token))
+                except ValueError:
+                    continue
+            if len(numbers) < 3:
+                continue
+            points.append((numbers[-3], numbers[-2], numbers[-1]))
+    return points
+
+
+def _infer_pos_units(points: list[tuple[float, float, float]]) -> str:
+    """
+    Infer whether Polhemus points are in centimeters or millimeters.
+
+    Parameters
+    ----------
+    points : list of tuple
+        Parsed xyz points from a .pos file.
+
+    Returns
+    -------
+    str
+        "cm" or "mm", based on the median absolute coordinate magnitude.
+    """
+    if not points:
+        raise ValueError("No coordinate points found in .pos file")
+
+    magnitudes = [abs(value) for point in points for value in point]
+    median_value = statistics.median(magnitudes)
+    return "cm" if median_value <= 30 else "mm"
+
+
+def _collect_meg_dirs(bids_root: Path, bids_subject_id: str) -> list[Path]:
+    """
+    Collect all MEG directories for a BIDS subject.
+
+    Parameters
+    ----------
+    bids_root : Path
+        BIDS dataset root directory.
+    bids_subject_id : str
+        BIDS subject ID without the "sub-" prefix.
+
+    Returns
+    -------
+    list of Path
+        All MEG directories for the subject.
+    """
+    subject_dir = bids_root / f"sub-{bids_subject_id}"
+    if not subject_dir.exists():
+        return []
+
+    session_dirs = [
+        path
+        for path in subject_dir.iterdir()
+        if path.is_dir() and path.name.startswith("ses-")
+    ]
+    if session_dirs:
+        return [path / "meg" for path in session_dirs if (path / "meg").exists()]
+
+    meg_dir = subject_dir / "meg"
+    return [meg_dir] if meg_dir.exists() else []
+
+
+def _get_session_label(meg_dir: Path) -> Optional[str]:
+    """
+    Extract the session label from a MEG directory path, if present.
+
+    Parameters
+    ----------
+    meg_dir : Path
+        Path to the MEG directory.
+
+    Returns
+    -------
+    str or None
+        Session label without the "ses-" prefix, or None if not sessioned.
+    """
+    parent_name = meg_dir.parent.name
+    if parent_name.startswith("ses-"):
+        return parent_name.replace("ses-", "", 1)
+    return None
+
+
+def _build_headshape_filename(
+    bids_subject_id: str,
+    session: Optional[str] = None,
+    acquisition: str = "HEAD",
+) -> str:
+    """
+    Build a BIDS-compliant headshape filename for a subject/session.
+
+    Parameters
+    ----------
+    bids_subject_id : str
+        BIDS subject ID without the "sub-" prefix.
+    session : str, optional
+        Session label without the "ses-" prefix.
+    acquisition : str
+        Acquisition label to use for the headshape file.
+
+    Returns
+    -------
+    str
+        Filename for the headshape sidecar (e.g.,
+        "sub-001_ses-01_acq-HEAD_headshape.pos").
+    """
+    parts = [f"sub-{bids_subject_id}"]
+    if session:
+        parts.append(f"ses-{session}")
+    parts.append(f"acq-{acquisition}")
+    return "_".join(parts) + "_headshape.pos"
+
+
+def _update_coordsystem_json(
+    coordsystem_path: Path,
+    headshape_relpath: str,
+    units: str,
+    coordinate_system: str = "CTF",
+) -> None:
+    """
+    Update a BIDS coordsystem JSON with headshape metadata.
+
+    Parameters
+    ----------
+    coordsystem_path : Path
+        Path to the *_coordsystem.json file.
+    headshape_relpath : str
+        Relative path to the headshape file, usually the filename.
+    units : str
+        Coordinate units for the headshape points ("cm" or "mm").
+    coordinate_system : str
+        Coordinate system name, typically "CTF" for CTF MEG.
+    """
+    with coordsystem_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    data["DigitizedHeadPoints"] = headshape_relpath
+    data["DigitizedHeadPointsCoordinateSystem"] = coordinate_system
+    data["DigitizedHeadPointsCoordinateUnits"] = units
+
+    with coordsystem_path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+
+
+def _update_meg_json(meg_json_path: Path, has_headshape: bool) -> None:
+    """
+    Update *_meg.json to reflect headshape availability.
+
+    Parameters
+    ----------
+    meg_json_path : Path
+        Path to the *_meg.json file.
+    has_headshape : bool
+        Whether digitized head points are available.
+    """
+    with meg_json_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    data["DigitizedHeadPoints"] = bool(has_headshape)
+
+    with meg_json_path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+
+
+def add_headshape_files(
+    subject_list: list,
+    bids_root: Path = BIDS_ROOT,
+    pos_root: Path = POS_ROOT,
+    subject_list_csv: Path = SUBJECT_LIST_CSV,
+    dry_run: bool = False,
+    prefer_non_face: bool = True,
+) -> dict:
+    """
+    Attach Polhemus headshape files to an existing BIDS dataset.
+
+    Parameters
+    ----------
+    subject_list : list
+        List of subject IDs (source IDs like "C01" or BIDS IDs like "001").
+    bids_root : Path
+        Root directory of the BIDS dataset to update.
+    pos_root : Path
+        Directory containing Polhemus .pos files.
+    subject_list_csv : Path
+        Subject list CSV for mapping megid to ibbid.
+    dry_run : bool
+        If True, only report intended changes without writing files.
+    prefer_non_face : bool
+        Prefer .pos files without "Face" in the filename when available.
+
+    Returns
+    -------
+    dict
+        Result summary with "success", "failed", and "skipped" lists.
+    """
+    results = {"success": [], "failed": [], "skipped": []}
+
+    if not pos_root.exists():
+        raise FileNotFoundError(f"Polhemus directory not found: {pos_root}")
+
+    df = load_subject_list(subject_list_csv)
+    if "megid" not in df.columns or "ibbid" not in df.columns:
+        raise ValueError("Subject list is missing required columns: megid, ibbid")
+
+    for subject_id in subject_list:
+        try:
+            source_id = _normalize_source_id(subject_id)
+            row = df[df["megid"] == source_id]
+            if row.empty:
+                results["failed"].append((subject_id, "subject not in list"))
+                continue
+
+            ibbid = str(row.iloc[0]["ibbid"]).strip()
+            if not ibbid or ibbid.lower() == "nan":
+                results["failed"].append((subject_id, "missing ibbid"))
+                continue
+
+            pos_path = _select_pos_file(
+                ibbid, pos_root, prefer_non_face=prefer_non_face
+            )
+            if pos_path is None:
+                results["failed"].append((subject_id, f"no .pos file for {ibbid}"))
+                continue
+
+            points = _parse_pos_points(pos_path)
+            units = _infer_pos_units(points)
+
+            bids_subject_id = source_id_to_bids_id(source_id)
+            meg_dirs = _collect_meg_dirs(bids_root, bids_subject_id)
+            if not meg_dirs:
+                results["failed"].append((subject_id, "no MEG directory found"))
+                continue
+
+            for meg_dir in meg_dirs:
+                session_label = _get_session_label(meg_dir)
+                headshape_name = _build_headshape_filename(
+                    bids_subject_id=bids_subject_id,
+                    session=session_label,
+                )
+                dest_path = meg_dir / headshape_name
+
+                if dry_run:
+                    print(
+                        f"[HEADSHAPE] {source_id}: would copy {pos_path.name} -> {dest_path}"
+                    )
+                else:
+                    shutil.copy2(pos_path, dest_path)
+
+                coordsystem_paths = sorted(meg_dir.glob("*_coordsystem.json"))
+                if not coordsystem_paths:
+                    results["skipped"].append((subject_id, "no coordsystem JSON found"))
+                for coordsystem_path in coordsystem_paths:
+                    if dry_run:
+                        print(
+                            f"[HEADSHAPE] {source_id}: would update {coordsystem_path.name}"
+                        )
+                    else:
+                        _update_coordsystem_json(
+                            coordsystem_path,
+                            headshape_relpath=headshape_name,
+                            units=units,
+                        )
+
+                meg_json_paths = sorted(meg_dir.glob("*_meg.json"))
+                for meg_json_path in meg_json_paths:
+                    if dry_run:
+                        print(
+                            f"[HEADSHAPE] {source_id}: would update {meg_json_path.name}"
+                        )
+                    else:
+                        _update_meg_json(meg_json_path, has_headshape=True)
+
+            results["success"].append((subject_id, pos_path.name, units))
+        except Exception as exc:
+            results["failed"].append((subject_id, str(exc)))
+
+    return results
 
 
 def batch_convert(
