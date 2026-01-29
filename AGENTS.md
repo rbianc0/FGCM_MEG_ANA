@@ -70,15 +70,36 @@ Shared utilities:
 
 ### scripts/convert_to_bids.py
 CLI script for batch conversion:
+Run from the repository root and set `PYTHONPATH` to the repo so `dfgt` is importable.
 ```bash
 # Convert all subjects
-python scripts/convert_to_bids.py
+PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py
 
 # Convert single subject
-python scripts/convert_to_bids.py --subject C01
+PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --subject C01
 
 # Dry run
-python scripts/convert_to_bids.py --dry-run
+PYTHONPATH="$(pwd)" uv run python scripts/convert_to_bids.py --dry-run
+```
+
+### Environment and Validation (uv)
+Use the repository uv environment for all scripts:
+```bash
+uv sync
+```
+
+BIDS validator (precompiled wheel, no Node/Docker required):
+```bash
+uv add --dev bids-validator-deno
+uv sync
+uv run bids-validator-deno --help
+uv run bids-validator-deno /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS
+```
+
+Fallback validators if needed:
+```bash
+npx bids-validator /media/bianco/LaCie/DATA/DFGT/FGCM_BIDS
+docker run --rm -v "/media/bianco/LaCie/DATA/DFGT/FGCM_BIDS:/bids:ro" bids/validator /bids
 ```
 
 ### notebooks/
@@ -199,6 +220,11 @@ dependencies = [
     "mne>=1.10.2",
     "mne-bids>=0.17.0",
     "pandas",
+]
+
+[dependency-groups]
+dev = [
+    "bids-validator-deno>=2.3.1",
 ]
 ```
 

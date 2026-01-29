@@ -20,6 +20,19 @@ wheels = [
 ]
 
 [[package]]
+name = "bids-validator-deno"
+version = "2.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/93/e53da5e299fe628ecd01e92bef2adf220cdc11931fb08e2b1a1c6eaaab13/bids_validator_deno-2.3.1.tar.gz", hash = "sha256:5011f71c8ce406bab2145195107280e753b13bc9db9a0b37e23125603211947c", size = 82996, upload-time = "2026-01-27T19:04:56.646Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/a7/f54c1d79a928ef86890832795e8717109e91f6e66ae59996e93b706a257c/bids_validator_deno-2.3.1-py2.py3-none-macosx_10_12_x86_64.whl", hash = "sha256:dafff318d4451b438eb4d06f28f1c73fd2d1755da65288ff2ee2c5e50bd64b8c", size = 42883066, upload-time = "2026-01-27T19:04:35.854Z" },
+    { url = "https://files.pythonhosted.org/packages/be/9e/cdb8887a32716a596370c30f213c27326ed39f94539deaddf8f94ba5e6f4/bids_validator_deno-2.3.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:91e7082aa7d1ba595333b67b0dc9a43d650f5658f7345cbacaa2cd20beae74de", size = 40762711, upload-time = "2026-01-27T19:04:39.896Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/96/2368dcfe6214b2e9b208fc4e23f5912e6bc4c8c09f62c687dec811b220c2/bids_validator_deno-2.3.1-py2.py3-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e2c7f015edcd8b18a05a6b6d4af5356655474cf2237937ca50051c7dda3eb10d", size = 43148666, upload-time = "2026-01-27T19:04:43.747Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/95/441295ec4df509aa7153af87d0cc840b2c41469cf5a059f3e93c3c86035a/bids_validator_deno-2.3.1-py2.py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d593822cb28f84c9b8706381f705a337ee425fd7cf381e3080c6d617186caad9", size = 44419165, upload-time = "2026-01-27T19:04:48.463Z" },
+    { url = "https://files.pythonhosted.org/packages/34/9b/bb35b85a9610b57d9ce14011d8b1ab35f896a42e9613e4e1c2512e75dbf2/bids_validator_deno-2.3.1-py2.py3-none-win_amd64.whl", hash = "sha256:e91639df500c59ae94d58c5d0ed6cdac95c2aa69badc4026eb8dc01050c2e24d", size = 43664339, upload-time = "2026-01-27T19:04:53.549Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2025.11.12"
 source = { registry = "https://pypi.org/simple" }
@@ -165,6 +178,11 @@ dependencies = [
     { name = "seaborn" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "bids-validator-deno" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "autoreject", specifier = ">=0.4.3" },
@@ -175,6 +193,9 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "seaborn", specifier = ">=0.13.2" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "bids-validator-deno", specifier = ">=2.3.1" }]
 
 [[package]]
 name = "fonttools"
